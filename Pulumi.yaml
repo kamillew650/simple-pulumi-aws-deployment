@@ -1,0 +1,7 @@
+name: simple-app-deployment
+runtime: nodejs
+description: A deployment of simple app containing db, web and api
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-typescript
