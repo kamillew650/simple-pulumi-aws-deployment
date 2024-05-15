@@ -2,15 +2,40 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 
-async function test() {
-  // Create an AWS resource (S3 Bucket)
-  const bucket = new aws.s3.Bucket("my-bucket");
+const stack = pulumi.getStack();
 
-  // Export the name of the bucket
-  return bucket.id;
-}
+const network = new awsx.ec2.Vpc(`vpc-${stack}`);
 
-const buckerId = await test();
+const ec2Instance = new aws.ec2.Instance(`instance-${stack}`, {
+  vpcSecurityGroupIds: [network.publicSubnetIds.apply((ids) => ids[0])],
+  instanceType: "t2.micro",
+});
 
-// Export the name of the bucket
-export const bucketName = buckerId;
+const elasticIp = new aws.ec2.Eip(`eip-${stack}`, {
+  instance: ec2Instance.id,
+});
+
+const ec2Role = new aws.iam.Role(`role-${stack}`, {
+  assumeRolePolicy: JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Action: "sts:AssumeRole",
+        Principal: {
+          Service: "ec2.amazonaws.com",
+        },
+        Effect: "Allow",
+        Sid: "",
+      },
+    ],
+  }),
+});
+
+const s3ReadOnlyPolicy = aws.iam.ManagedPolicies.AmazonS3ReadOnlyAccess;
+const instanceRolePolicyAttachment = new aws.iam.RolePolicyAttachment(
+  "instanceRolePolicyAttachment",
+  {
+    role: ec2Role.name,
+    policyArn: s3ReadOnlyPolicy,
+  }
+);

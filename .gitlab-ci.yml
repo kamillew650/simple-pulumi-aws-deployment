@@ -1,0 +1,21 @@
+stages:
+  - infra-build
+  - deploy
+
+infra-build:
+  stage: infra-build
+  when: manual
+  image: pulumi/pulumi-nodejs:latest
+  script:
+    - pulumi login --cloud-url file://$CI_PROJECT_DIR/my-cloud-url
+    - pulumi stack select my-stack-name || pulumi stack init my-stack-name
+    - pulumi up --yes
+
+deploy:
+  stage: deploy
+  when: manual
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+  script:
+    - ssh user@vps-ip-address "cd /path/to/application && git pull && ./deploy.sh"
