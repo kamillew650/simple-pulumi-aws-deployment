@@ -7,16 +7,6 @@ services:
       - "80:80"
     volumes:
       - ./web:/usr/share/nginx/html:ro
-    depends_on:
-      - api
-
-  api:
-    image: node:latest
-    command: npm start
-    volumes:
-      - ./api:/app
-    depends_on:
-      - db
 
   db:
     image: postgres:latest

@@ -7,15 +7,26 @@ infra-build:
   when: manual
   image: pulumi/pulumi-nodejs:latest
   script:
-    - pulumi login --cloud-url file://$CI_PROJECT_DIR/my-cloud-url
-    - pulumi stack select my-stack-name || pulumi stack init my-stack-name
-    - pulumi up --yes
+    - npm install -g pnpm
+    - pnpm i
+    - pulumi login
+    - pulumi stack select -c dev
+    - pnpm run deploy
 
 deploy:
   stage: deploy
   when: manual
   image: alpine:latest
   before_script:
-    - apk add --no-cache openssh-client
+    - apk update && apk add --no-cache openssh-client aws-cli jq
+    - eval $(ssh-agent -s)
+    - echo "$EC2_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - EC2_IP=`aws ssm get-parameter --name "/dev/ec2_ip" --region eu-central-1 | jq '.Parameter.Value' | cut -d "\"" -f 2`
+    - ssh-keyscan $EC2_IP >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
   script:
-    - ssh user@vps-ip-address "cd /path/to/application && git pull && ./deploy.sh"
+    - ssh ec2-user@$EC2_IP "echo test"
+    - scp ./import-ssm-params.bash ./docker-compose.yaml ./index.html ec2-user@$EC2_IP:/home/ec2-user/
+    - ssh ec2-user@$EC2_IP "docker-compose down && ./import-ssm-params.bash && sudo mkdir ./web || echo "Folder web already created" && sudo mv ./index.html ./web && docker-compose pull && docker-compose up -d"
