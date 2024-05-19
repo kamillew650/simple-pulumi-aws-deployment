@@ -5,8 +5,9 @@
   "scripts": {
     "build": "tsup",
     "preview": "tsup && pulumi preview",
+    "refresh": "tsup && pulumi refresh --yes",
     "deploy": "tsup && pulumi up --yes",
-    "destroy": "tsup && pulumi destroy"
+    "destroy": "tsup && pulumi destroy --yes"
   },
   "devDependencies": {
     "@types/node": "^18",

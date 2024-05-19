@@ -1,9 +1,11 @@
 stages:
-  - infra-build
-  - deploy
+  - infra-deploy
+  - infra-refresh
+  - infra-destroy
+  - app-deploy
 
-infra-build:
-  stage: infra-build
+infra-deploy:
+  stage: infra-deploy
   when: manual
   image: pulumi/pulumi-nodejs:latest
   script:
@@ -13,8 +15,30 @@ infra-build:
     - pulumi stack select -c dev
     - pnpm run deploy
 
+infra-refresh:
+  stage: infra-refresh
+  when: manual
+  image: pulumi/pulumi-nodejs:latest
+  script:
+    - npm install -g pnpm
+    - pnpm i
+    - pulumi login
+    - pulumi stack select -c dev
+    - pnpm run refresh
+
+infra-destroy:
+  stage: infra-destroy
+  when: manual
+  image: pulumi/pulumi-nodejs:latest
+  script:
+    - npm install -g pnpm
+    - pnpm i
+    - pulumi login
+    - pulumi stack select -c dev
+    - pnpm run destroy
+
 deploy:
-  stage: deploy
+  stage: app-deploy
   when: manual
   image: alpine:latest
   before_script:

@@ -49,14 +49,16 @@ const ec2Instance = pulumi
   .all([network.publicSubnetIds, ec2SecurityGroup.id])
   .apply(
     ([subnetId, sgId]) =>
-      new aws.ec2.Instance(`instance-${stack}`, {
-        subnetId: subnetId[0],
-        securityGroups: [sgId],
-        instanceType: "t2.micro",
-        // EC2 key pair name created in AWS console
-        keyName: "SIMPLE_DEPLOY",
-        ami: ami.id,
-        userData: `#!/bin/bash
+      new aws.ec2.Instance(
+        `instance-${stack}`,
+        {
+          subnetId: subnetId[0],
+          securityGroups: [sgId],
+          instanceType: "t2.micro",
+          // EC2 key pair name created in AWS console
+          keyName: "SIMPLE_DEPLOY",
+          ami: ami.id,
+          userData: `#!/bin/bash
   sudo yum install docker jq -y;
   sudo service docker start;
   sudo chkconfig docker on;
@@ -65,7 +67,9 @@ const ec2Instance = pulumi
   docker-compose version;
   sudo chmod 666 /var/run/docker.sock;
   `,
-      })
+        },
+        { dependsOn: [network, ec2SecurityGroup] }
+      )
   );
 
 const elasticIp = new aws.ec2.Eip(`eip-${stack}`, {
